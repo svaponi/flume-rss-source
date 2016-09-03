@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int-feed="http://www.springframework.org/schema/integration/feed"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration/feed http://www.springframework.org/schema/integration/feed/spring-integration-feed-4.0.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.0.xsd">
+
+	<context:annotation-config />
+
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="ignoreUnresolvablePlaceholders" value="true" />
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_FALLBACK" />
+		<property name="searchSystemEnvironment" value="true" />
+		<property name="order" value="1" />
+	</bean>
+	
+	<int-feed:inbound-channel-adapter id="feedAdapter"
+		channel="feedChannel" url="${rss.endpoint.url}">
+	<int:poller time-unit="${rss.endpoint.poller.timeunit}"
+		fixed-rate="#{systemProperties['rss.endpoint.poller.fixedrate']}"
+		max-messages-per-poll="#{systemProperties['rss.endpoint.poller.poolsize']}"
+		task-executor="pool" />
+	</int-feed:inbound-channel-adapter>
+
+	<bean id="rssEndpoint"
+		class="it.miriade.flume.source.rss.RssEndpoint"></bean>
+
+	<int:service-activator id="activator"
+		input-channel="feedChannel" ref="rssEndpoint" />
+
+	<task:executor id="pool" pool-size="5-25" queue-capacity="20"
+		keep-alive="120" />
+
+</beans>
+
+
+
